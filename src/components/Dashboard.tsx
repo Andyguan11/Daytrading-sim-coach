@@ -1,21 +1,18 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   PresentationChartLineIcon, 
   UserGroupIcon, 
-  DocumentTextIcon,
   BoltIcon as LightningBoltIcon,
-  ChartBarIcon,
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
-import { generateRandomScenario } from '../utils/scenarioGenerator';
 
 const Dashboard: React.FC = () => {
-  // Generate a random scenario for the quick start option
+  const navigate = useNavigate();
+
+  // Navigate to the simulator page when Quick Start is clicked
   const handleQuickStart = () => {
-    const randomScenario = generateRandomScenario();
-    // In a real app, we would store this in state/context and navigate
-    console.log('Generated random scenario:', randomScenario);
+    navigate('/simulator');
   };
 
   return (
@@ -72,7 +69,7 @@ const Dashboard: React.FC = () => {
               className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               <div className="flex-shrink-0">
-                <DocumentTextIcon className="h-10 w-10 text-indigo-600" />
+                <PresentationChartLineIcon className="h-10 w-10 text-indigo-600" />
               </div>
               <div className="flex-1 min-w-0">
                 <span className="absolute inset-0" aria-hidden="true" />

@@ -1,7 +1,7 @@
 // Market-related types
 export type MarketCondition = 'bullish' | 'bearish' | 'choppy' | 'trending' | 'volatile' | 'ranging';
 export type TimeFrame = 'scalping' | 'intraday' | 'swing' | 'position';
-export type AssetClass = 'stocks' | 'futures' | 'forex' | 'crypto' | 'options';
+export type AssetClass = 'stocks' | 'futures' | 'forex' | 'crypto' | 'options' | 'etfs' | 'bonds';
 
 // Trader profile types
 export type TraderPersonality = 'impulsive' | 'analytical' | 'cautious' | 'aggressive' | 'patient';
@@ -128,6 +128,7 @@ export interface TraderDecision {
   emotionalInfluence: EmotionType | null;
   violatesStrategy: boolean;
   outcome: 'positive' | 'negative' | 'neutral';
+  session?: 'Asian' | 'London' | 'New York' | 'Overnight';
 }
 
 // User coaching and journal

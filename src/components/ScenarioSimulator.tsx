@@ -306,34 +306,71 @@ const ScenarioSimulator: React.FC = () => {
   const handleSubmitAssessment = () => {
     if (!traderState) return;
     
-    if (!selectedEmotion) {
-      alert('Please select an emotional state');
+    if (selectedEmotions.length === 0) {
+      alert('Please select at least one emotional state');
       return;
     }
     
-    // Calculate score based only on emotion identification
+    // Calculate score based on emotion identification
     let score = 0;
     
-    // Check if emotion is correct (worth 100% of total score now)
-    if (selectedEmotion === traderState.currentEmotionalState.primary) {
-      score = 100;
+    // Get the primary selected emotion (first in the array)
+    const primarySelectedEmotion = selectedEmotions[0];
+    
+    // Check if primary emotion is correct (worth 70% of total score)
+    if (selectedEmotions.includes(traderState.currentEmotionalState.primary)) {
+      score += 70;
     } else {
       // Partial credit for related emotions
-      if (relatedEmotions[traderState.currentEmotionalState.primary]?.includes(selectedEmotion)) {
-        score = 60; // Partial credit for related emotion
-      } else {
-        score = 30; // Some credit for at least trying
+      for (const emotion of selectedEmotions) {
+        if (relatedEmotions[traderState.currentEmotionalState.primary]?.includes(emotion)) {
+          score += 40; // Partial credit for related emotion
+          break;
+        }
       }
     }
+    
+    // Additional points for having multiple emotions that match related emotions
+    if (score > 0) {
+      // Count how many selected emotions are either the primary or related
+      const relevantEmotions = [
+        traderState.currentEmotionalState.primary,
+        ...(relatedEmotions[traderState.currentEmotionalState.primary] || [])
+      ];
+      
+      const matchCount = selectedEmotions.filter(e => relevantEmotions.includes(e)).length;
+      if (matchCount > 1) {
+        score += 15; // Bonus for identifying multiple relevant emotions
+      }
+    } else {
+      // Some credit for at least trying
+      score = 20;
+    }
+    
+    // Cap the score at 100
+    score = Math.min(score, 100);
     
     setAssessmentScore(score);
     
     // Generate feedback message
     let feedback = '';
-    if (selectedEmotion === traderState.currentEmotionalState.primary) {
-      feedback += `✅ Excellent! You correctly identified that the trader is experiencing ${selectedEmotion}. `;
-    } else if (score === 60) {
-      feedback += `👍 Good observation. The trader's primary emotion is ${traderState.currentEmotionalState.primary}, but ${selectedEmotion} is closely related and may also be present. `;
+    if (selectedEmotions.includes(traderState.currentEmotionalState.primary)) {
+      feedback += `✅ Excellent! You correctly identified that the trader is experiencing ${traderState.currentEmotionalState.primary}. `;
+      
+      // Comment on additional emotions if any
+      const otherCorrectEmotions = selectedEmotions.filter(e => 
+        e !== traderState.currentEmotionalState.primary && 
+        relatedEmotions[traderState.currentEmotionalState.primary]?.includes(e)
+      );
+      
+      if (otherCorrectEmotions.length > 0) {
+        feedback += `You also correctly identified related emotions: ${otherCorrectEmotions.join(', ')}. `;
+      }
+    } else if (score >= 40) {
+      const relatedEmotion = selectedEmotions.find(e => 
+        relatedEmotions[traderState.currentEmotionalState.primary]?.includes(e)
+      );
+      feedback += `👍 Good observation. The trader's primary emotion is ${traderState.currentEmotionalState.primary}, but ${relatedEmotion} is closely related and may also be present. `;
     } else {
       feedback += `❌ The trader's primary emotion is ${traderState.currentEmotionalState.primary}, which is driving their decisions. `;
     }
@@ -349,10 +386,11 @@ const ScenarioSimulator: React.FC = () => {
     
     feedback += `\n\nThe trader made ${profitableTrades} profitable trades out of ${totalTrades} total trades. `;
     
-    if (traderState.performance.profitLoss >= 0) {
-      feedback += `Despite the emotional influence, they managed to achieve a profit of ${traderState.performance.profitLoss.toFixed(2)}%.`;
+    // Add your coaching advice only if provided
+    if (coachingAdvice && coachingAdvice.trim() !== '') {
+      feedback += `\n\nYour coaching advice was thoughtful and will help the trader improve their emotional awareness.`;
     } else {
-      feedback += `The emotional influence led to a loss of ${Math.abs(traderState.performance.profitLoss).toFixed(2)}%.`;
+      feedback += `\n\nConsider providing coaching advice next time to help the trader improve their emotional awareness.`;
     }
     
     setFeedbackMessage(feedback);
@@ -958,9 +996,9 @@ const ScenarioSimulator: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleSubmitAssessment}
-                        disabled={!selectedEmotion}
+                        disabled={selectedEmotions.length === 0}
                         className={`inline-flex items-center px-5 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
-                          !selectedEmotion
+                          selectedEmotions.length === 0
                             ? 'bg-gray-400 cursor-not-allowed'
                             : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
                         }`}
@@ -1021,7 +1059,7 @@ const ScenarioSimulator: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setAssessmentSubmitted(false);
-                        setSelectedEmotion('');
+                        setSelectedEmotions([]);
                         setCoachingAdvice('');
                         setAssessmentScore(null);
                         setFeedbackMessage('');

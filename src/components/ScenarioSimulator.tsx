@@ -210,7 +210,10 @@ const ScenarioSimulator: React.FC = () => {
 
   const handleRandomScenario = () => {
     try {
+      console.log("Starting random scenario generation...");
       setLoading(true);
+      setError(null);
+      
       // Reset assessment state
       setSelectedEmotion('');
       setCoachingAdvice('');
@@ -218,9 +221,14 @@ const ScenarioSimulator: React.FC = () => {
       setAssessmentScore(null);
       setFeedbackMessage('');
       
-      setTimeout(() => {
+      // Import the functions directly to avoid any issues
+      import('../utils/scenarioGenerator').then(module => {
         try {
+          console.log("Imported scenarioGenerator module");
+          const { generateRandomScenario } = module;
+          
           const result = generateRandomScenario();
+          console.log("Random scenario generated:", result);
           
           if (!result || !result.scenario || !result.trader || !result.traderState) {
             console.error('Invalid scenario data generated:', result);
@@ -232,16 +240,21 @@ const ScenarioSimulator: React.FC = () => {
           setScenario(result.scenario);
           setTrader(result.trader);
           setTraderState(result.traderState);
+          console.log("State updated with new scenario data");
           setLoading(false);
         } catch (error) {
           console.error('Error in scenario generation:', error);
-          setError('An error occurred while generating the scenario. Please try again.');
+          setError(`An error occurred while generating the scenario: ${error instanceof Error ? error.message : 'Unknown error'}`);
           setLoading(false);
         }
-      }, 500); // Simulate loading
+      }).catch(error => {
+        console.error('Error importing scenarioGenerator:', error);
+        setError(`Failed to load scenario generator: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setLoading(false);
+      });
     } catch (error) {
       console.error('Error in handleRandomScenario:', error);
-      setError('An error occurred. Please try again.');
+      setError(`An error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setLoading(false);
     }
   };
@@ -251,7 +264,10 @@ const ScenarioSimulator: React.FC = () => {
       alert('Please select at least one emotion type');
       return;
     }
-
+    
+    setLoading(true);
+    setError(null);
+    
     // Reset assessment state
     setSelectedEmotion('');
     setCoachingAdvice('');
@@ -259,20 +275,32 @@ const ScenarioSimulator: React.FC = () => {
     setAssessmentScore(null);
     setFeedbackMessage('');
     
-    setLoading(true);
-    setTimeout(() => {
-      const { scenario: newScenario, trader: newTrader, traderState: newTraderState } = generateCustomScenario(
+    try {
+      console.log("Generating custom scenario with emotions:", selectedEmotions);
+      
+      const result = generateCustomScenario(
         marketCondition,
         timeFrame,
         assetClass,
-        difficulty as 'easy' | 'medium' | 'hard',
+        difficulty,
         selectedEmotions
       );
-      setScenario(newScenario);
-      setTrader(newTrader);
-      setTraderState(newTraderState);
+      
+      console.log("Custom scenario generated:", {
+        scenarioId: result.scenario?.id,
+        traderId: result.trader?.id,
+        decisionsCount: result.traderState?.decisions?.length
+      });
+      
+      setScenario(result.scenario);
+      setTrader(result.trader);
+      setTraderState(result.traderState);
       setLoading(false);
-    }, 500); // Simulate loading
+    } catch (error) {
+      console.error('Error generating custom scenario:', error);
+      setError(`An error occurred while generating the custom scenario: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setLoading(false);
+    }
   };
 
   const handleSubmitAssessment = () => {
@@ -806,73 +834,44 @@ const ScenarioSimulator: React.FC = () => {
             </div>
           </div>
 
-          {/* Coaching Interface - Improved UI */}
-          <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
-            <h4 className="text-md font-medium text-gray-900 mb-4">Your Coaching Assessment</h4>
-            
-            {!assessmentSubmitted ? (
-              <div className="bg-gray-50 p-6 rounded-lg shadow-sm">
-                {/* Explanation of the assessment process */}
-                <div className="mb-6 bg-blue-50 p-4 rounded-md">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <InformationCircleIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-800">How Your Assessment Works</h3>
-                      <div className="mt-2 text-sm text-blue-700">
-                        <p>Your task is to identify what's driving this trader's decisions:</p>
-                        <ul className="list-disc pl-5 space-y-1 mt-2">
-                          <li>Identify the primary emotion affecting the trader</li>
-                          <li>Provide coaching advice (voice or text)</li>
-                        </ul>
+          {/* Coaching Assessment */}
+          <div className="mt-6">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-4">Coaching Assessment</h3>
+              {!assessmentSubmitted ? (
+                <div className="bg-gray-50 p-6 rounded-lg shadow-sm">
+                  {/* Explanation of the assessment process */}
+                  <div className="mb-6 bg-blue-50 p-4 rounded-md">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <InformationCircleIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-blue-800">How Your Assessment Works</h3>
+                        <div className="mt-2 text-sm text-blue-700">
+                          <p>Your task is to identify what's driving this trader's decisions:</p>
+                          <ul className="list-disc pl-5 space-y-1 mt-2">
+                            <li>Identify the primary emotion affecting the trader</li>
+                            <li>Provide coaching advice (voice or text)</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-6">
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-2">Primary Emotion</h3>
-                    <p className="text-sm text-gray-600 mb-2">
-                      What is the trader's primary emotional state?
-                    </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {emotions.map((emotion) => (
-                        <button
-                          key={emotion}
-                          className={`p-2 rounded-md text-sm ${
-                            primaryEmotion === emotion
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-100 hover:bg-gray-200'
-                          }`}
-                          onClick={() => {
-                            setPrimaryEmotion(emotion);
-                            if (!selectedEmotions.includes(emotion)) {
-                              setSelectedEmotions([...selectedEmotions, emotion]);
-                            }
-                          }}
-                        >
-                          {emotion.charAt(0).toUpperCase() + emotion.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-2">Secondary Emotions</h3>
-                    <p className="text-sm text-gray-600 mb-2">
-                      Select up to two additional emotions the trader might be experiencing
-                    </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {emotions
-                        .filter(emotion => emotion !== primaryEmotion)
-                        .map((emotion) => (
+                  <div className="space-y-6">
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-2">Primary Emotions</h3>
+                      <p className="text-sm text-gray-600 mb-2">
+                        Select up to 3 emotions the trader might be experiencing
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {emotions.map((emotion) => (
                           <button
                             key={emotion}
                             className={`p-2 rounded-md text-sm ${
-                              selectedEmotions.includes(emotion) && emotion !== primaryEmotion
-                                ? 'bg-blue-300 text-white'
+                              selectedEmotions.includes(emotion)
+                                ? 'bg-blue-500 text-white'
                                 : 'bg-gray-100 hover:bg-gray-200'
                             }`}
                             onClick={() => {
@@ -883,254 +882,173 @@ const ScenarioSimulator: React.FC = () => {
                               }
                             }}
                           >
-                            {emotion.charAt(0).toUpperCase() + emotion.slice(1)}
+                            <span className="text-xl mb-1 block">{getEmotionEmoji(emotion)}</span>
+                            <span className="capitalize">{emotion}</span>
                           </button>
                         ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="advice" className="block text-base font-medium text-gray-900 mb-3">
+                        What coaching advice would you give? 💬
+                      </label>
+                      <div className="mt-1">
+                        <textarea
+                          id="advice"
+                          name="advice"
+                          rows={4}
+                          value={coachingAdvice}
+                          onChange={(e) => setCoachingAdvice(e.target.value)}
+                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-lg"
+                          placeholder="Enter your coaching advice to help the trader overcome their emotional challenges..."
+                        />
+                      </div>
+                      
+                      {/* Voice recording controls */}
+                      <div className="mt-3 flex items-center">
+                        {!isRecording ? (
+                          <button
+                            type="button"
+                            onClick={startRecording}
+                            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          >
+                            <MicrophoneIcon className="-ml-0.5 mr-2 h-4 w-4 text-gray-500" />
+                            Record Voice Advice
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={stopRecording}
+                            className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          >
+                            <StopIcon className="-ml-0.5 mr-2 h-4 w-4 text-red-500" />
+                            Stop Recording
+                          </button>
+                        )}
+                        
+                        {isRecording && (
+                          <div className="ml-3 flex items-center">
+                            <span className="relative flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                            </span>
+                            <span className="ml-2 text-sm text-gray-500">Recording...</span>
+                          </div>
+                        )}
+                        
+                        {transcribing && (
+                          <div className="ml-3 flex items-center">
+                            <RefreshIcon className="animate-spin h-4 w-4 text-indigo-500 mr-2" />
+                            <span className="text-sm text-gray-500">Transcribing...</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {recordingError && (
+                        <p className="mt-2 text-sm text-red-600">{recordingError}</p>
+                      )}
+                      
+                      <p className="mt-2 text-sm text-gray-500">
+                        Your advice helps the trader understand their emotional patterns. Type or use voice recording.
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={handleSubmitAssessment}
+                        disabled={!selectedEmotion}
+                        className={`inline-flex items-center px-5 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
+                          !selectedEmotion
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+                        }`}
+                      >
+                        Submit Assessment
+                      </button>
                     </div>
                   </div>
-
-                  <div>
-                    <label htmlFor="advice" className="block text-base font-medium text-gray-900 mb-3">
-                      What coaching advice would you give? 💬
-                    </label>
-                    <div className="mt-1">
-                      <textarea
-                        id="advice"
-                        name="advice"
-                        rows={4}
-                        value={coachingAdvice}
-                        onChange={(e) => setCoachingAdvice(e.target.value)}
-                        className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-lg"
-                        placeholder="Enter your coaching advice to help the trader overcome their emotional challenges..."
-                      />
-                    </div>
-                    
-                    {/* Voice recording controls */}
-                    <div className="mt-3 flex items-center">
-                      {!isRecording ? (
-                        <button
-                          type="button"
-                          onClick={startRecording}
-                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                          <MicrophoneIcon className="-ml-0.5 mr-2 h-4 w-4 text-gray-500" />
-                          Record Voice Advice
-                        </button>
+                </div>
+              ) : (
+                <div className="bg-gray-50 p-6 rounded-lg shadow-sm">
+                  <div className="text-center mb-6">
+                    <div className="inline-block rounded-full bg-gray-100 p-4">
+                      {assessmentScore !== null && assessmentScore >= 70 ? (
+                        <CheckCircleIcon className="h-10 w-10 text-green-500" />
                       ) : (
-                        <button
-                          type="button"
-                          onClick={stopRecording}
-                          className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                        >
-                          <StopIcon className="-ml-0.5 mr-2 h-4 w-4 text-red-500" />
-                          Stop Recording
-                        </button>
+                        <XCircleIcon className="h-10 w-10 text-red-500" />
                       )}
-                      
-                      {isRecording && (
-                        <div className="ml-3 flex items-center">
-                          <span className="relative flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </div>
+                    <h3 className="mt-3 text-xl font-medium text-gray-900">Assessment Results</h3>
+                    <div className="mt-1">
+                      {assessmentScore !== null && (
+                        <div className="flex flex-col items-center">
+                          <div className="w-full max-w-xs bg-gray-200 rounded-full h-2.5 mb-2">
+                            <div 
+                              className={`h-2.5 rounded-full ${
+                                assessmentScore >= 80 ? 'bg-green-500' : 
+                                assessmentScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                              }`} 
+                              style={{ width: `${assessmentScore}%` }}
+                            ></div>
+                          </div>
+                          <span className={`text-lg font-medium ${
+                            assessmentScore >= 80 ? 'text-green-600' : 
+                            assessmentScore >= 60 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>
+                            {assessmentScore >= 80 ? 'Excellent' : 
+                             assessmentScore >= 60 ? 'Good' : 'Needs Improvement'} 
+                            ({assessmentScore}%)
                           </span>
-                          <span className="ml-2 text-sm text-gray-500">Recording...</span>
-                        </div>
-                      )}
-                      
-                      {transcribing && (
-                        <div className="ml-3 flex items-center">
-                          <RefreshIcon className="animate-spin h-4 w-4 text-indigo-500 mr-2" />
-                          <span className="text-sm text-gray-500">Transcribing...</span>
                         </div>
                       )}
                     </div>
-                    
-                    {recordingError && (
-                      <p className="mt-2 text-sm text-red-600">{recordingError}</p>
-                    )}
-                    
-                    <p className="mt-2 text-sm text-gray-500">
-                      Your advice helps the trader understand their emotional patterns. Type or use voice recording.
-                    </p>
                   </div>
-
-                  <div className="pt-2 flex justify-end">
+                  
+                  <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
+                    <h4 className="text-base font-medium text-gray-900 mb-3">Feedback:</h4>
+                    <p className="text-sm text-gray-700 whitespace-pre-line">{feedbackMessage}</p>
+                  </div>
+                  
+                  <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
+                    <h4 className="text-base font-medium text-gray-900 mb-3">Your Coaching Advice:</h4>
+                    <p className="text-sm text-gray-700 italic">"{coachingAdvice}"</p>
+                  </div>
+                  
+                  <div className="mt-6 flex justify-end space-x-4">
                     <button
                       type="button"
-                      onClick={handleSubmitAssessment}
-                      disabled={!selectedEmotion}
-                      className={`inline-flex items-center px-5 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
-                        !selectedEmotion
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
-                      }`}
+                      onClick={() => {
+                        setAssessmentSubmitted(false);
+                        setSelectedEmotion('');
+                        setCoachingAdvice('');
+                        setAssessmentScore(null);
+                        setFeedbackMessage('');
+                      }}
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
-                      Submit Assessment
+                      Try Again
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRandomScenario}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Next Scenario
                     </button>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="bg-gray-50 p-6 rounded-lg shadow-sm">
-                <div className="text-center mb-6">
-                  <div className="inline-block rounded-full bg-gray-100 p-4">
-                    {assessmentScore !== null && assessmentScore >= 70 ? (
-                      <CheckCircleIcon className="h-10 w-10 text-green-500" />
-                    ) : (
-                      <XCircleIcon className="h-10 w-10 text-red-500" />
-                    )}
-                  </div>
-                  <h3 className="mt-3 text-xl font-medium text-gray-900">Assessment Results</h3>
-                  <div className="mt-1">
-                    {assessmentScore !== null && (
-                      <div className="flex flex-col items-center">
-                        <div className="w-full max-w-xs bg-gray-200 rounded-full h-2.5 mb-2">
-                          <div 
-                            className={`h-2.5 rounded-full ${
-                              assessmentScore >= 80 ? 'bg-green-500' : 
-                              assessmentScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`} 
-                            style={{ width: `${assessmentScore}%` }}
-                          ></div>
-                        </div>
-                        <span className={`text-lg font-medium ${
-                          assessmentScore >= 80 ? 'text-green-600' : 
-                          assessmentScore >= 60 ? 'text-yellow-600' : 'text-red-600'
-                        }`}>
-                          {assessmentScore >= 80 ? 'Excellent' : 
-                           assessmentScore >= 60 ? 'Good' : 'Needs Improvement'} 
-                          ({assessmentScore}%)
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
-                  <h4 className="text-base font-medium text-gray-900 mb-3">Feedback:</h4>
-                  <p className="text-sm text-gray-700 whitespace-pre-line">{feedbackMessage}</p>
-                </div>
-                
-                <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
-                  <h4 className="text-base font-medium text-gray-900 mb-3">Your Coaching Advice:</h4>
-                  <p className="text-sm text-gray-700 italic">"{coachingAdvice}"</p>
-                </div>
-                
-                <div className="mt-6 flex justify-end space-x-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAssessmentSubmitted(false);
-                      setSelectedEmotion('');
-                      setCoachingAdvice('');
-                      setAssessmentScore(null);
-                      setFeedbackMessage('');
-                    }}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    Try Again
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleRandomScenario}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    Next Scenario
-                  </button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-
-          {/* Trader Actions */}
-          {traderState && (
-            <>
-              <div className="mt-6 bg-white p-4 rounded-lg shadow">
-                <h3 className="text-lg font-semibold mb-2">Trader Actions</h3>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reasoning</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outcome</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {traderState.decisions.map((decision, index) => {
-                        const time = new Date(decision.timestamp);
-                        const formattedTime = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
-                        
-                        return (
-                          <tr key={index} className={decision.violatesStrategy ? 'bg-red-50' : ''}>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{formattedTime}</td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{decision.session || 'N/A'}</td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm font-medium">
-                              <span className={`px-2 py-1 rounded-full text-xs ${getActionColor(decision.action)}`}>
-                                {formatAction(decision.action)}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 text-sm text-gray-500">
-                              {decision.reasoning}
-                              {decision.emotionalInfluence && (
-                                <span className="ml-1 text-xs text-red-500">
-                                  (Influenced by {decision.emotionalInfluence})
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm">
-                              <span className={`px-2 py-1 rounded-full text-xs ${
-                                decision.outcome === 'positive' ? 'bg-green-100 text-green-800' : 
-                                decision.outcome === 'negative' ? 'bg-red-100 text-red-800' : 
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {decision.outcome}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                
-                <div className="mt-4 p-3 bg-gray-50 rounded-md">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="text-sm font-medium">P&L: </span>
-                      <span className={`text-sm font-bold ${
-                        traderState.performance.profitLoss > 0 ? 'text-green-600' : 
-                        traderState.performance.profitLoss < 0 ? 'text-red-600' : 'text-gray-600'
-                      }`}>
-                        {traderState.performance.profitLoss > 0 ? '+' : ''}
-                        {traderState.performance.profitLoss.toFixed(2)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium">Correct Decisions: </span>
-                      <span className="text-sm">{traderState.performance.correctDecisions}/{traderState.decisions.length}</span>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium">Emotional Mistakes: </span>
-                      <span className="text-sm">{traderState.performance.emotionalMistakes}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-6 bg-white p-4 rounded-lg shadow">
-                <TradingChart decisions={traderState.decisions} />
-              </div>
-            </>
-          )}
         </div>
       )}
 
+      {/* Error message */}
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-          <p className="font-medium">{error}</p>
+          <p className="font-medium">Error: {error}</p>
           <button 
             className="text-sm underline mt-1"
             onClick={() => setError(null)}

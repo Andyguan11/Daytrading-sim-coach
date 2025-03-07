@@ -35,7 +35,7 @@ const Dashboard: React.FC = () => {
           <p className="mt-1 max-w-2xl text-sm text-gray-500">Get started with common activities</p>
         </div>
         <div className="border-t border-gray-200 px-4 py-5 sm:p-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <button
               onClick={handleQuickStart}
               className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -63,20 +63,6 @@ const Dashboard: React.FC = () => {
                 <p className="text-sm text-gray-500">Create custom trading scenarios</p>
               </div>
             </Link>
-
-            <Link
-              to="/journal"
-              className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <div className="flex-shrink-0">
-                <PresentationChartLineIcon className="h-10 w-10 text-indigo-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900">Trading Journal</p>
-                <p className="text-sm text-gray-500">Log and analyze your real trades</p>
-              </div>
-            </Link>
           </div>
         </div>
       </div>
@@ -88,7 +74,7 @@ const Dashboard: React.FC = () => {
           <p className="mt-1 max-w-2xl text-sm text-gray-500">Trading psychology improvement metrics</p>
         </div>
         <div className="border-t border-gray-200 px-4 py-5 sm:p-6">
-          <dl className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div className="px-4 py-5 bg-gray-50 shadow rounded-lg overflow-hidden sm:p-6">
               <dt className="text-sm font-medium text-gray-500 truncate">Scenarios Completed</dt>
               <dd className="mt-1 text-3xl font-semibold text-gray-900">0</dd>
@@ -97,11 +83,6 @@ const Dashboard: React.FC = () => {
             <div className="px-4 py-5 bg-gray-50 shadow rounded-lg overflow-hidden sm:p-6">
               <dt className="text-sm font-medium text-gray-500 truncate">Coaching Accuracy</dt>
               <dd className="mt-1 text-3xl font-semibold text-gray-900">0%</dd>
-            </div>
-
-            <div className="px-4 py-5 bg-gray-50 shadow rounded-lg overflow-hidden sm:p-6">
-              <dt className="text-sm font-medium text-gray-500 truncate">Journal Entries</dt>
-              <dd className="mt-1 text-3xl font-semibold text-gray-900">0</dd>
             </div>
           </dl>
         </div>

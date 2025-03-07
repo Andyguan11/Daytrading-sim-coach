@@ -118,17 +118,22 @@ export interface TraderState {
     profitLoss: number;
     correctDecisions: number;
     emotionalMistakes: number;
+    totalTrades: number;
   };
 }
 
 export interface TraderDecision {
   timestamp: string;
   action: 'buy' | 'sell' | 'hold' | 'increase_position' | 'decrease_position' | 'exit';
+  direction?: 'long' | 'short';
   reasoning: string;
   emotionalInfluence: EmotionType | null;
   violatesStrategy: boolean;
   outcome: 'positive' | 'negative' | 'neutral';
   session?: 'Asian' | 'London' | 'New York' | 'Overnight';
+  entryPrice?: number;
+  exitPrice?: number;
+  tradeProfit?: number;
 }
 
 // User coaching and journal
